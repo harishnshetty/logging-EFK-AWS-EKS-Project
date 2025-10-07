@@ -258,11 +258,11 @@ kubectl get svc -n efk-logging
 
 ---
 
-## 🚀 Deploy a Sample Microservice
+## 🚀 Deploy a Sample Python app
 
 ```bash
-kubectl create namespace microservice
-kubectl apply -f 4-microservice-deployment.yml -n microservice
+kubectl create namespace app
+kubectl apply -f 2-app.yml -n microservice
 ```
 
 ---

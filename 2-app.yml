@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-deployment
+  namespace: app
+  labels:
+    app: webapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapp
+  template:
+    metadata:
+      labels:
+        app: webapp
+    spec:
+      containers:
+      - name: webapp
+        image: harishnshetty/fluentbit-python:latest
+        ports:
+        - containerPort: 5005
+        volumeMounts:
+        - mountPath: /log
+          name: log-volume
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 5005
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 5005
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      - name: log-volume
+        hostPath:
+          path: /var/log/webapp
+          type: DirectoryOrCreate
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp-service
+  namespace: app
+  labels:
+    app: webapp
+spec:
+  type: LoadBalancer
+  selector:
+    app: webapp
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 5005
