@@ -1,66 +1,75 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: webapp-deployment
-  namespace: app
   labels:
-    app: webapp
+    app: service-a-deployment
+    # run: service-a-deployment
+  name: service-a-deployment
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: webapp
+      app: service-a-deployment
   template:
     metadata:
       labels:
-        app: webapp
+        app: service-a-deployment
     spec:
       containers:
-      - name: webapp
-        image: harishnshetty/fluentbit-python:latest
+      - image: harishnshetty/servicea:latest
+        name: service-a
+        imagePullPolicy: Always
         ports:
-        - containerPort: 5005
-        volumeMounts:
-        - mountPath: /log
-          name: log-volume
-        resources:
-          requests:
-            memory: "64Mi"
-            cpu: "50m"
-          limits:
-            memory: "128Mi"
-            cpu: "100m"
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 5005
-          initialDelaySeconds: 5
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 5005
-          initialDelaySeconds: 5
-          periodSeconds: 10
-      volumes:
-      - name: log-volume
-        hostPath:
-          path: /var/log/webapp
-          type: DirectoryOrCreate
+        - containerPort: 3001
+        env:
+        - name: OTEL_EXPORTER_JAEGER_ENDPOINT
+          value: "http://jaeger-collector.tracing:14268/api/traces"
+        - name: SERVICE_B_URI
+          value: "http://b-service.dev"
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: service-b-deployment
+    # run: service-b-deployment
+  name: service-b-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: service-b-deployment
+  template:
+    metadata:
+      labels:
+        app: service-b-deployment
+    spec:
+      containers:
+      - image: aharishnshetty/serviceb:latest
+        name: service-b
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3002
+        env:
+        - name: OTEL_EXPORTER_JAEGER_ENDPOINT
+          value: "http://jaeger-collector.tracing:14268/api/traces"
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: webapp-service
-  namespace: app
   labels:
-    app: webapp
+    job: node-api
+    app: b-service
+  name: b-service
 spec:
-  type: LoadBalancer
-  selector:
-    app: webapp
   ports:
-  - protocol: TCP
+  - name: b-service-port
     port: 80
-    targetPort: 5005
+    protocol: TCP
+    targetPort: 3002
+  selector:
+    app: service-b-deployment
+

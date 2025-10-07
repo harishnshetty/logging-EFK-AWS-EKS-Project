@@ -222,6 +222,9 @@ helm upgrade --install elasticsearch elastic/elasticsearch \
   --set esJavaOpts="-Xms1g -Xmx1g" \
   --wait
 ```
+```bash
+kubectl config set-context --current --namespace=efk-logging 
+```
 - Installs Elasticsearch in the `efk-logging` namespace with persistence enabled.
 
 ### 4. Retrieve Elasticsearch Credentials
@@ -263,13 +266,16 @@ kubectl get svc -n efk-logging
 ```
 - Access Kibana at `http://<load-balancer-dns>:5601`
 
+```bash
+kubectl describe pod elasticsearch-master-0 | grep -i "controlled by"
+```
 ---
 
 ## 🚀 Deploy a Sample Python App
 
 ```bash
-kubectl create namespace microservice
-kubectl apply -f 2-app.yml -n microservice
+kubectl create namespace app
+kubectl apply -f 2-app.yml -n app
 ```
 - App name: ersin-fluentbit
 - Filter: ersin-fluentbit*
@@ -284,3 +290,4 @@ helm uninstall elasticsearch -n efk-logging
 helm uninstall kibana -n efk-logging
 eksctl delete cluster -f 0-eks-creation-config.yml
 ```
+kubectl delete pvc elasticsearch-master-elasticsearch-master-0 -n efk-logging
