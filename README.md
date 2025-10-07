@@ -1,31 +1,44 @@
-#  EFK Logging on AWS EKS and 11 log monitor Demo Project with K8s AWS EKS.
-
-
+# Kubernetes Logging with EFK: Fluent Bit, Elasticsearch & Kibana on EKS
 
 ## For more projects, check out  
 [https://harishnshetty.github.io/projects.html](https://harishnshetty.github.io/projects.html)
 
-[![Video Tutorial](https://github.com/harishnshetty/image-data-project/blob/5d2e06ffa3dd7687607b0c7d4892a6b161c077f9/10%20microservice%20online%20shop%20project.jpg)](https://youtu.be/KNH_qe1vJAg)
+[![Video Tutorial](https://github.com/harishnshetty/image-data-project/blob/ece2a6c999a2e5add18510042c95fd6311331545/efk%20k8s.jpg)](https://youtu.be/KNH_qe1vJAg)
 
 ## 🔍 Overview
-EFK logging is crucial in any distributed system, especially in Kubernetes, to monitor application behavior, detect issues, and ensure the smooth functioning of microservices.
 
-## 🚀 Importance
-- **Debugging**: Logs provide critical information for troubleshooting.
-- **Auditing**: Logs serve as an audit trail, showing actions and actors.
-- **Performance Monitoring**: Analyzing logs helps identify bottlenecks.
-- **Security**: Logs help detect unauthorized access or malicious activity.
+### 1️⃣ Elasticsearch (E)
+- **Purpose:** Stores and indexes logs for fast search and analytics.
+- **Role:** Acts as the database of your logging pipeline.
+- **Deployment:** StatefulSet in Kubernetes, often with persistent volumes (e.g., gp2/gp3).
+
+### 2️⃣ Fluent Bit (F)
+- **Purpose:** Collects logs from Kubernetes pods/nodes.
+- **Role:** Log shipper and optionally parser/transformer.
+- **Deployment:** Typically as a DaemonSet (one pod per node).
+- **Function:** Reads container logs, enriches with Kubernetes metadata, forwards to Elasticsearch.
+
+### 3️⃣ Kibana (K)
+- **Purpose:** Visualizes logs stored in Elasticsearch.
+- **Role:** UI for searching, filtering, and analyzing logs.
+- **Deployment:** Deployment/Service (often LoadBalancer type for external access).
+- **Function:** Allows dashboards, saved searches, and real-time log monitoring.
+
+## 1️⃣ Fluent Bit vs Logstash
+
+| Feature                | Fluent Bit                                          | Logstash                                                   |
+| ---------------------- | --------------------------------------------------- | ---------------------------------------------------------- |
+| Lightweight            | ✅ Small footprint, ideal for edge nodes or sidecars | ❌ Heavier, uses more CPU/memory                            |
+| Kubernetes native      | ✅ Easy to run as DaemonSet                          | ✅ Can run as DaemonSet but more resource-heavy             |
+| Parsing/Transformation | Basic filters                                       | ✅ Advanced parsing, grok, regex, enrichment                |
+| Ease of Setup          | ✅ Simple Helm chart                                 | ⚠ More configuration (pipelines, inputs, outputs, filters) |
 
 ## 🛠️ Logging Tools for Kubernetes
+
 - **EFK Stack** (Elasticsearch, Fluent Bit, Kibana)
 - **EFK Stack** (Elasticsearch, FluentD, Kibana)
 - **ELK Stack** (Elasticsearch, Logstash, Kibana)
 - **Promtail + Loki + Grafana**
-
-## 📦 EFK Stack (Elasticsearch, Fluent Bit, Kibana)
-- **Elasticsearch**: Stores and indexes log data.
-- **Fluent Bit**: Lightweight log forwarder that collects logs and sends them to Elasticsearch.
-- **Kibana**: Visualization tool for exploring and analyzing logs.
 
 ---
 
@@ -41,13 +54,6 @@ sudo apt install -y bash-completion wget git zip unzip curl jq net-tools build-e
 Reload bash completion if needed:
 ```bash
 source /etc/bash_completion
-```
-
-**Install latest Git:**
-```bash
-sudo add-apt-repository ppa:git-core/ppa
-sudo apt update
-sudo apt install git -y
 ```
 
 ## 1. AWS CLI Installation
@@ -69,17 +75,16 @@ Refer: [kubectl Installation Guide](https://kubernetes.io/docs/tasks/tools/insta
 
 ```bash
 sudo apt-get update
-# apt-transport-https may be a dummy package; if so, you can skip that package
 sudo apt-get install -y apt-transport-https ca-certificates curl gnupg
 
-# If the folder `/etc/apt/keyrings` does not exist, it should be created before the curl command, read the note below.
-# sudo mkdir -p -m 755 /etc/apt/keyrings
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.33/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-sudo chmod 644 /etc/apt/keyrings/kubernetes-apt-keyring.gpg # allow unprivileged APT programs to read this keyring
+# If the folder `/etc/apt/keyrings` does not exist, create it:
+sudo mkdir -p -m 755 /etc/apt/keyrings
 
-# This overwrites any existing configuration in /etc/apt/sources.list.d/kubernetes.list
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.33/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+sudo chmod 644 /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
 echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.33/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
-sudo chmod 644 /etc/apt/sources.list.d/kubernetes.list   # helps tools such as command-not-found to work correctly
+sudo chmod 644 /etc/apt/sources.list.d/kubernetes.list
 
 sudo apt-get update
 sudo apt-get install -y kubectl bash-completion
@@ -100,7 +105,6 @@ source ~/.bashrc
 Refer: [eksctl Installation Guide](https://eksctl.io/installation/)
 
 ```bash
-# for ARM systems, set ARCH to: `arm64`, `armv6` or `armv7`
 ARCH=amd64
 PLATFORM=$(uname -s)_$ARCH
 
@@ -113,7 +117,6 @@ tar -xzf eksctl_$PLATFORM.tar.gz -C /tmp && rm eksctl_$PLATFORM.tar.gz
 
 sudo install -m 0755 /tmp/eksctl /usr/local/bin && rm /tmp/eksctl
 
-# Install bash completion
 sudo apt-get install -y bash-completion
 
 # Enable eksctl auto-completion
@@ -121,7 +124,6 @@ echo 'source <(eksctl completion bash)' >> ~/.bashrc
 echo 'alias e=eksctl' >> ~/.bashrc
 echo 'complete -F __start_eksctl e' >> ~/.bashrc
 
-# Apply changes immediately
 source ~/.bashrc
 ```
 
@@ -143,7 +145,6 @@ echo 'source <(helm completion bash)' >> ~/.bashrc
 echo 'alias h=helm' >> ~/.bashrc
 echo 'complete -F __start_helm h' >> ~/.bashrc
 
-# Apply changes immediately
 source ~/.bashrc
 ```
 
@@ -156,6 +157,14 @@ aws configure
 aws configure list
 ```
 
+## Clone the Repo
+
+```bash
+git clone https://github.com/harishnshetty/logging-EFK-AWS-EKS-Project.git
+cd logging-EFK-AWS-EKS-Project
+```
+
+---
 
 ## 🚀 Cluster Setup
 
@@ -195,14 +204,11 @@ kubectl get deploy ebs-csi-controller -n kube-system
 ### 3. Install Elasticsearch
 
 ```bash
-# Create namespace if it doesn’t exist
 kubectl create namespace efk-logging --dry-run=client -o yaml | kubectl apply -f -
 
-# Add and update Elastic Helm repo
 helm repo add elastic https://helm.elastic.co
 helm repo update
 
-# Install/upgrade Elasticsearch
 helm upgrade --install elasticsearch elastic/elasticsearch \
   -n efk-logging \
   --set replicas=1 \
@@ -228,7 +234,7 @@ kubectl get secrets --namespace=efk-logging elasticsearch-master-credentials -oj
 ```
 > **Note:** Save the password for future reference.
 
-### 5. Install Kibana
+### 5. Install Kibana 
 
 ```bash
 helm upgrade --install kibana elastic/kibana \
@@ -245,6 +251,7 @@ helm upgrade --install kibana elastic/kibana \
 
 ```bash
 helm repo add fluent https://fluent.github.io/helm-charts
+helm repo update
 helm install fluent-bit fluent/fluent-bit \
   -f 1-fluentbit-values.yml \
   -n efk-logging
@@ -258,12 +265,14 @@ kubectl get svc -n efk-logging
 
 ---
 
-## 🚀 Deploy a Sample Python app
+## 🚀 Deploy a Sample Python App
 
 ```bash
-kubectl create namespace app
+kubectl create namespace microservice
 kubectl apply -f 2-app.yml -n microservice
 ```
+- App name: ersin-fluentbit
+- Filter: ersin-fluentbit*
 
 ---
 
