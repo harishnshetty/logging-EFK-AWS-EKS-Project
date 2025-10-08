@@ -6,7 +6,7 @@ In this video, we’ll deploy Fluent Bit, Elasticsearch, and Kibana to collect, 
 ## For more projects, check out  
 [https://harishnshetty.github.io/projects.html](https://harishnshetty.github.io/projects.html)
 
-[![Video Tutorial](https://github.com/harishnshetty/image-data-project/blob/ece2a6c999a2e5add18510042c95fd6311331545/efk%20k8s.jpg)](https://youtu.be/KNH_qe1vJAg)
+[![Video Tutorial](https://github.com/harishnshetty/image-data-project/blob/ece2a6c999a2e5add18510042c95fd6311331545/efk%20k8s.jpg)](https://youtu.be/gkWa_KmtKv8)
 
 ## 🔍 Overview
 
@@ -280,8 +280,6 @@ kubectl describe pod elasticsearch-master-0 | grep -i "controlled by"
 kubectl create namespace microservice
 kubectl apply -f 2-app.yml -n microservice
 ```
-- App name: ersin-fluentbit
-- Filter: ersin-fluentbit*
 
 ---
 
