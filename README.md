@@ -277,8 +277,8 @@ kubectl describe pod elasticsearch-master-0 | grep -i "controlled by"
 ## 🚀 Deploy a Sample Python App
 
 ```bash
-kubectl create namespace app
-kubectl apply -f 2-app.yml -n app
+kubectl create namespace microservice
+kubectl apply -f 2-app.yml -n microservice
 ```
 - App name: ersin-fluentbit
 - Filter: ersin-fluentbit*
