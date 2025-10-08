@@ -4,7 +4,7 @@ kind: ClusterConfig
 metadata:
   name: my-cluster
   region: ap-south-1
-  # version: "1.33"
+  version: "1.33"
   tags:
     owner: HarishNShetty
     bu: hns
